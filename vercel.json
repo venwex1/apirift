@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/cron/poll-sources", "schedule": "*/30 * * * *" },
+    { "path": "/api/cron/classify-changes", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/send-alerts", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/send-digests", "schedule": "0 9 * * 1" },
+    { "path": "/api/cron/lifecycle-emails", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/backup-export", "schedule": "0 3 * * 0" }
+  ],
+  "functions": {
+    "app/api/cron/poll-sources/route.ts": { "maxDuration": 300 },
+    "app/api/cron/classify-changes/route.ts": { "maxDuration": 300 },
+    "app/api/cron/send-alerts/route.ts": { "maxDuration": 120 },
+    "app/api/cron/send-digests/route.ts": { "maxDuration": 300 },
+    "app/api/cron/lifecycle-emails/route.ts": { "maxDuration": 120 },
+    "app/api/cron/backup-export/route.ts": { "maxDuration": 300 },
+    "app/api/impact/route.ts": { "maxDuration": 60 }
+  }
+}

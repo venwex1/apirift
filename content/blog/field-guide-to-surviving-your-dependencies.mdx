@@ -1,0 +1,49 @@
+---
+title: "A field guide to surviving your dependencies"
+description: "Practical habits for building on APIs you don't control: how to read a deprecation notice, when to pin versions, and how to turn upstream chaos into calendar entries."
+date: "2026-07-02"
+---
+
+Your product is a thin layer of your code on top of a thick layer of other people's promises. Those promises change. This is a practical guide to living with that — useful whether or not you use Upstream, though we'll note where automation removes the discipline requirement entirely.
+
+## Know your actual blast radius
+
+Most teams can't answer "which external APIs can take us down?" without opening the codebase. Fix that first. List every third-party service your product calls in production, and for each one write a single line: what breaks for users when this breaks. Payments API → checkout dies. Email API → receipts and resets stop. AI API → the core feature 500s or degrades.
+
+The exercise takes twenty minutes and permanently changes how you read vendor emails. (In Upstream, this is the Impact page: paste a package.json and the mapping is generated and kept current. But the paper version works.)
+
+## Read deprecation notices like contracts, because they are
+
+A deprecation notice has exactly three fields that matter, and vendors bury all three in friendly prose: **what stops working, on what date, and what replaces it.** Extract those and ignore the rest. Then do the one thing almost nobody does: put the date in your calendar, two weeks early, with a link to the migration doc.
+
+A deprecation handled before the deadline is a small PR. The same deprecation discovered after the deadline is an incident, a rollback decision, and an apology. Same work. Wildly different cost. The entire game is *when you find out.*
+
+## Pin ruthlessly, upgrade deliberately
+
+Floating versions (`^`, `~`, `latest`) mean strangers choose your deploy day. Pin exact versions of anything that touches money, auth, or data. Let automation propose upgrades — Dependabot or Renovate, weekly, grouped — and treat majors as scheduled work, never as auto-merges.
+
+When you do bump a major, read the release notes *before* the diff. SDK majors usually encode an upstream API change; the SDK diff shows you what moved, but the release notes tell you why and what else is coming.
+
+## Make silence mean something
+
+The most corrosive thing about dependency risk is ambient anxiety: *is something out there ticking?* You can't check twenty changelogs weekly — you won't, and intermittent discipline is worse than none because it builds false confidence.
+
+The fix is any system where **no signal reliably means no news**: a monitored aggregation with severity filtering, or a teammate who owns the rotation (and actually does it), or Upstream's model — everything read continuously, only material changes surfaced, a weekly "all quiet" that means exactly what it says. The mechanism matters less than the property. If silence is ambiguous, you have monitoring theater.
+
+## Have a Tuesday-morning drill
+
+When an upstream break does land, the first minutes go to the same three questions every time — so script them:
+
+1. **Is it them or us?** Check the provider's status page before touching your code. Half of "our outages" aren't.
+2. **What changed and when?** Their changelog and your deploy log, side by side. If you deployed nothing and behavior changed, the answer is upstream.
+3. **What's the smallest correct response?** Often it's pinning back an SDK, toggling a compatibility flag, or waiting out an incident — not a heroic rewrite at 7 a.m.
+
+Write these down somewhere you'll find them while panicking. Future-you reads with a very small vocabulary.
+
+## The mindset
+
+None of this is pessimism about vendors. Building on Stripe and OpenAI and Vercel instead of writing payments, models, and infra yourself is the whole reason a solo founder can ship a real product. The platforms are the leverage.
+
+The mature posture is just symmetry: you monitor your own code because you know it changes; monitor their promises with equal seriousness, because those change too — on their schedule, announced in places you don't read, with deadlines that don't move.
+
+Your dependencies publish their intentions weeks in advance. Surviving them is mostly the art of being someone who finds out.

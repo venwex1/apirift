@@ -1,0 +1,47 @@
+---
+title: "The outage that wasn't ours"
+description: "Every solo founder eventually learns the same lesson: your product's worst bugs are merged by people you've never met. This is the story of that lesson, and what we built because of it."
+date: "2026-07-02"
+---
+
+The support email arrived at 6:47 on a Tuesday morning: "Checkout is broken. I've tried three cards. Losing my patience."
+
+If you've shipped a product, you know the specific cold feeling of that email. Not the annoyance of a bug report — the vertigo of a *revenue* bug report. Payments are the one system you tested obsessively, the one flow you click through before every deploy, the one thing that cannot break.
+
+The dashboard showed nothing. Deploys: none in four days. Error rates: flat. Database: healthy. The checkout flow, clicked manually with a real card: broken. A signature verification failure, deep in a webhook handler that had worked flawlessly for eleven months.
+
+Here is the part that stings. The failure wasn't in our code. Our payment provider had rolled out a change to how webhook signatures were computed — announced, documented, and published to their changelog *six weeks earlier*, with a clear migration window and a clear deadline. The deadline had passed that Tuesday at midnight. The changelog entry even had a friendly tone about it.
+
+Nobody read it. Of course nobody read it.
+
+## The math of modern dependencies
+
+Count the third-party APIs in a typical small SaaS product. Payments. Auth. Email delivery. AI models. Hosting platform. Database host. File storage. Error tracking. Analytics. Search. It's rarely fewer than ten; it's often twenty-five.
+
+Each one publishes a changelog. Each one runs a status page. Each one ships deprecations with deadlines, SDK majors with breaking changes, policy updates with compliance dates. Individually, each feed is low-volume and mostly boring — a trickle of feature announcements you don't care about, punctuated *rarely* by an entry that will take your product down on a specific future date.
+
+Twenty-five feeds, each mostly noise, each occasionally existential. The expected value of reading any single entry is near zero. The expected cost of missing the wrong one is a Tuesday morning email about checkout.
+
+Big companies solved this with headcount. There are people at every large tech company whose actual job includes reading vendor changelogs and filing tickets against internal teams. The role is called platform engineering, or developer experience, or vendor management. It works. It also costs several hundred thousand dollars a year, which is why you don't have it.
+
+Solo founders and small teams solved it with nothing. The strategy is: find out when it breaks. We don't call it a strategy, but that's what it is. The monitoring stack watches *your* code — your errors, your latency, your uptime. Nothing watches the twenty-five companies who can break your product with a merge you'll never see.
+
+## Why this was unsolvable until about two years ago
+
+The obvious fix — aggregate all the feeds into one place — has been tried, and it fails in an instructive way. An unfiltered firehose of twenty-five changelogs is *worse* than nothing, because it trains you to ignore it. RSS readers full of vendor feeds die the same death as unread newsletter folders. The problem was never access to the information. The problem is that the information is unstructured prose, written by different teams in different formats, and deciding whether an entry matters *to you specifically* requires reading and understanding it against your integration surface.
+
+"Reads arbitrary prose and decides whether it matters to a specific audience" was, until recently, a description of a human job. It is now a description of a cheap language-model call. An entry like "We're updating the default behavior of the customers endpoint to..." can be read, classified — breaking or cosmetic? deadline or FYI? which API surface? — and routed in under a second, for a fraction of a cent.
+
+That single economic fact is the whole reason Upstream can exist. Reading every changelog on the internet was never worth a human. It is trivially worth a machine.
+
+## What "watched" should mean
+
+We built Upstream around a specific standard: silence must be information. If you hear nothing, that must *mean* nothing happened — not that nothing was seen.
+
+So the system reads everything: every changelog, status feed, and release channel for every provider in the registry, every thirty minutes, forever. Each entry is classified by kind and severity against the surface it touches. A breaking change in an API you use becomes an alert in your inbox within minutes, with the affected surface and the action to take. A feature announcement becomes one line in Monday's digest. A deprecation with a date becomes a countdown that ticks on your dashboard until you've dealt with it.
+
+Six weeks of warning is a calm afternoon of migration work. Zero weeks of warning is a Tuesday morning email and a day of firefighting followed by an apology thread. The information was public either way. The entire difference is whether something was reading it on your behalf.
+
+That checkout bug cost about nine hours, one customer, and a very specific kind of humility. The fix — the real one — wasn't in the webhook handler. It was accepting that a product built on other people's platforms needs to watch those platforms with the same seriousness it watches itself.
+
+Your stack publishes its intentions. Someone should be reading them.

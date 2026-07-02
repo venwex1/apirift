@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --ring: theme(colors.signal.DEFAULT);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ink-950 text-fg antialiased;
+  font-feature-settings: "ss01" on, "cv01" on;
+}
+
+.light body {
+  @apply bg-paper text-ink-950;
+}
+
+::selection {
+  background: rgba(46, 230, 168, 0.25);
+}
+
+/* Focus is always visible. Keyboard users are first-class. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Hairline dividers that read as instrument panel etching. */
+.etch {
+  @apply border-line;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+/* Data values render in mono everywhere — timestamps, counts, severities. */
+.datum {
+  @apply font-mono tabular-nums tracking-tight;
+}
+
+/* Prose styles for blog / MDX. */
+.prose-upstream {
+  @apply text-fg leading-relaxed;
+}
+.prose-upstream h2 {
+  @apply font-display text-2xl font-semibold mt-12 mb-4 text-fg;
+}
+.prose-upstream h3 {
+  @apply font-display text-xl font-semibold mt-8 mb-3 text-fg;
+}
+.prose-upstream p {
+  @apply my-4 text-fg-muted;
+}
+.prose-upstream a {
+  @apply text-signal underline underline-offset-4 decoration-signal/40 hover:decoration-signal transition-colors;
+}
+.prose-upstream code {
+  @apply font-mono text-sm bg-ink-800 border border-line rounded px-1.5 py-0.5 text-fg;
+}
+.prose-upstream pre {
+  @apply bg-ink-900 border border-line rounded-lg p-4 my-6 overflow-x-auto;
+}
+.prose-upstream pre code {
+  @apply bg-transparent border-0 p-0;
+}
+.prose-upstream ul {
+  @apply my-4 pl-6 list-disc text-fg-muted;
+}
+.prose-upstream li {
+  @apply my-1.5;
+}
+.prose-upstream blockquote {
+  @apply border-l-2 border-signal/50 pl-4 my-6 text-fg italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

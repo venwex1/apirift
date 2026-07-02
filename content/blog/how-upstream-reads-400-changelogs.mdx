@@ -1,0 +1,64 @@
+---
+title: "How Upstream reads 400 changelogs so you don't"
+description: "The engineering behind autonomous dependency intelligence: content-hash polling, deterministic extraction, LLM classification with strict schemas, and the failure modes we designed for first."
+date: "2026-07-02"
+---
+
+Upstream's job sounds simple: read everything API providers publish, and tell each user about the subset that will break *their* product. The interesting engineering is in the word "autonomous" — the pipeline runs unattended, forever, against sources we don't control, feeding an alerting system where both false positives and false negatives have real costs. This post walks through how it works and why it's built the way it is.
+
+## The pipeline in one paragraph
+
+Every thirty minutes, a cron job fetches every registered source — RSS feeds, JSON feeds, HTML changelog pages. Each response is content-hashed; unchanged sources short-circuit immediately. Changed sources go through deterministic extraction into candidate entries, deduplicated against everything seen before. New entries are classified by a language model into kind (breaking, deprecation, incident, security, feature, notice) and severity, with the affected API surfaces and any stated deadline extracted. Classified changes fan out: instant email for high severity to watchers on paid plans, weekly digest for everything else. Every stage is idempotent, budgeted, and designed to degrade rather than fail.
+
+## Decision one: the LLM never touches the network
+
+The model classifies; it never fetches or parses. Extraction is deterministic code — feed parsing for RSS and JSON, heading-based segmentation for HTML.
+
+Three reasons. First, cost and latency: deterministic extraction is effectively free, and content-hashing means an unchanged changelog costs one HTTP request and one SHA-256 — no tokens. Only genuinely new entries reach the model.
+
+Second, auditability. When extraction is code, a bad parse is a reproducible bug you can fix. When extraction is a prompt, a bad parse is a shrug.
+
+Third, and most important: prompt injection. Changelog pages are third-party content. If the model fetched and interpreted pages wholesale, a malicious or compromised page could steer it. In our design, page content enters the model only as a bounded excerpt inside a JSON envelope, in a prompt whose only legal output is a JSON object validated against a strict schema. An adversarial changelog can produce a wrong severity — it can't produce an action beyond that, because classification has no tools and its output has no interpretation beyond the schema.
+
+```ts
+const classificationSchema = z.object({
+  kind: z.enum(["BREAKING", "DEPRECATION", "INCIDENT",
+                "SECURITY", "FEATURE", "MAINTENANCE", "NOTICE"]),
+  severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]),
+  summary: z.string().min(1).max(500),
+  affectedSurfaces: z.array(z.string().max(80)).max(8),
+  actionRequired: z.string().max(500).nullable(),
+  effectiveAt: z.string().nullable(),
+});
+```
+
+Anything that fails `safeParse` is retried; after three failures the entry is marked and *shown unclassified* rather than guessed at or dropped. A feed item you can see with a "classification pending" tag is honest. A silently swallowed one is a lie about your risk.
+
+## Decision two: idempotency is structural, not procedural
+
+Everything runs on serverless crons, which means every job must assume it will be re-run, killed mid-flight, and re-run again. Instead of "being careful," the schema makes duplicates impossible:
+
+- Changes carry a unique `(providerId, externalKey)` where `externalKey = sha256(url + title)` — re-polling a source re-inserts nothing.
+- Alert fan-out claims deliveries with a unique `(userId, changeId, channel)` and `createMany(skipDuplicates)` — a crashed run resumes exactly where it stopped, because unsent rows are simply rows with `sentAt = null`.
+- Stripe webhook processing inserts the event id into a ledger table first; a unique violation means "already handled, return 200." Stripe can deliver an event five times and mutate state once.
+- Lifecycle emails insert into a `(userId, template)` unique table *before* sending. The insert is the lock. If the send fails, the row is deleted and tomorrow's run retries.
+
+The pattern throughout: the database constraint *is* the idempotency mechanism. Application code doesn't remember what happened; it attempts, and the constraint arbitrates.
+
+## Decision three: budget-capped intelligence
+
+An autonomous system that calls a paid API needs a hard ceiling, or a misbehaving feed (imagine a source that regenerates all its entry URLs daily) becomes a surprise invoice. Classification consumes from a daily Redis counter with a hard cap. Over budget, entries simply stay pending — the backlog processes tomorrow, oldest first. The budget guard fails *open* on Redis errors, because it protects cost, not correctness.
+
+The same philosophy governs every dependency. The rate limiter fails open — availability beats throttling. The cache falls through to the database — it's an optimization, never a dependency. The AI being down converts to "pending" states, never errors. A source that 404s five polls in a row disables itself and files a report, so the registry heals instead of rotting.
+
+## Decision four: the moat is a table
+
+The system's compounding asset is boring to describe: it's the `Change` table. Every classified entry — every breaking change, every deprecation with its deadline, every incident — accumulates into a structured, queryable history of how every major API actually behaves. Which providers break things often. How much deprecation notice they really give. What their "stable" means.
+
+Monitoring is shared infrastructure: Stripe gets watched once, for everyone, so the marginal cost of a new user is approximately zero while the value of the history grows with every poll. A competitor starting today can copy the pipeline in a month. They start with an empty table.
+
+## What we deliberately didn't build
+
+No browser automation for JavaScript-rendered changelogs (fragile, expensive; providers that hide their changelog behind a JS app get their status feed watched instead, and the registry notes the gap). No webhooks *from* providers (almost none offer them). No fine-tuned model (the frontier-lab Haiku-class models classify better than anything we could train, and they improve without our effort). No queue infrastructure on day one — cron plus structural idempotency covers launch scale, and the fan-out seam is isolated so a queue slots in when the numbers demand it.
+
+The system's honest description: deterministic plumbing around a small, tightly constrained act of machine reading, arranged so that every failure mode degrades into a visible, recoverable state. It reads everything so that you can safely read nothing.
