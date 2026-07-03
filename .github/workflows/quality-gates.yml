@@ -97,6 +97,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
         run: |
           SHA="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
           TARGET="${{ github.event_name == 'pull_request' && 'preview' || 'production' }}"

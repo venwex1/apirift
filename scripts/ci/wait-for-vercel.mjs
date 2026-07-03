@@ -64,7 +64,12 @@ while (true) {
     const state = deployment.readyState ?? deployment.state;
     console.error(`Deployment ${deployment.uid}: ${state}`);
     if (state === "READY") {
-      const url = `https://${deployment.url}`;
+      // For production deploys, use the public custom domain so Vercel
+      // deployment-protection headers don't block the E2E runner.
+      const url =
+        target === "production"
+          ? process.env.PRODUCTION_URL ?? `https://${deployment.url}`
+          : `https://${deployment.url}`;
       console.log(url);
       if (process.env.GITHUB_OUTPUT) {
         appendFileSync(process.env.GITHUB_OUTPUT, `url=${url}\n`);
