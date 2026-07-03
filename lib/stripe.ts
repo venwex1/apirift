@@ -4,7 +4,7 @@ import { AppError, ErrorCode, withRetry } from "@/lib/errors";
 import type { BillingInterval, PaidPlan } from "@/lib/plans";
 
 export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-02-24.acacia",
+  apiVersion: "2025-01-27.acacia",
   typescript: true,
 });
 
@@ -23,7 +23,7 @@ export function priceIdFor(plan: PaidPlan, interval: BillingInterval): string {
   return PRICE_IDS[plan][interval];
 }
 
-/** Reverse lookup used by the webhook handler to map subscription → plan. */
+/** Reverse lookup used by the webhook handler to map subscription \u2192 plan. */
 export function planForPriceId(priceId: string): PaidPlan | null {
   for (const plan of ["PRO", "TEAM"] as const) {
     for (const interval of ["month", "year"] as const) {
@@ -66,7 +66,7 @@ export async function createCheckoutSession(params: {
     if (err instanceof AppError) throw err;
     throw new AppError(
       ErrorCode.STRIPE_ERROR,
-      "Stripe is having trouble right now. Your card was not charged — try again in a minute."
+      "Stripe is having trouble right now. Your card was not charged \u2014 try again in a minute."
     );
   }
 }
@@ -124,8 +124,8 @@ export async function grantReferralCredit(customerId: string): Promise<void> {
       stripe.customers.createBalanceTransaction(customerId, {
         amount: -1200, // negative = credit, in cents
         currency: "usd",
-        description: "Upstream referral reward — one month of Pro on us",
+        description: "Upstream referral reward \u2014 one month of Pro on us",
       }),
     { attempts: 3, baseDelayMs: 1000, timeoutMs: 15_000, label: "stripe.credit" }
   );
-      }
+  }
