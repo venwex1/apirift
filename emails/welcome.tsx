@@ -27,4 +27,19 @@ export default function WelcomeEmail({ name }: { name: string | null }) {
         your actual dependencies — and your stack is watched from then on.
       </Text>
       <Link href={appUrl("/impact")} style={styles.buttonGreen}>
- 
+        Paste your package.json
+      </Link>
+      <Text style={styles.text}>
+        Or start from your{" "}
+        <Link href={appUrl("/dashboard")} style={{ color: "#1B8A67" }}>
+          dashboard
+        </Link>{" "}
+        and pick providers from the registry by hand.
+      </Text>
+      <Text style={styles.mono}>
+        Setup time: ~60 seconds. Emails from us after this: only when your
+        stack changes, plus a Monday digest.
+      </Text>
+    </EmailShell>
+  );
+}
