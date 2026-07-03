@@ -23,14 +23,14 @@ jobs:
         run: |
           curl --fail-with-body --max-time 300 -s \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://upstream-pi.vercel.app/api/cron/poll-sources"
+            "https://apirift.com/api/cron/poll-sources"
       - name: Classify changes
         run: |
           curl --fail-with-body --max-time 300 -s \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://upstream-pi.vercel.app/api/cron/classify-changes"
+            "https://apirift.com/api/cron/classify-changes"
       - name: Send alerts
         run: |
           curl --fail-with-body --max-time 120 -s \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://upstream-pi.vercel.app/api/cron/send-alerts"
+            "https://apirift.com/api/cron/send-alerts"
