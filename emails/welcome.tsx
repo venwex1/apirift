@@ -7,7 +7,7 @@ export default function WelcomeEmail({ name }: { name: string | null }) {
       <Text style={styles.h1}>Your stack is now being watched</Text>
       <Text style={styles.text}>{greeting(name)}</Text>
       <Text style={styles.text}>
-        Welcome to Upstream. Here's the whole product in three lines:
+        Welcome to ApiRift. Here's the whole product in three lines:
       </Text>
       <Text style={styles.text}>
         • <strong>We read everything</strong> — changelogs, status pages, and
@@ -27,3 +27,4 @@ export default function WelcomeEmail({ name }: { name: string | null }) {
         your actual dependencies — and your stack is watched from then on.
       </Text>
       <Link href={appUrl("/impact")} style={styles.buttonGreen}>
+ 

@@ -11,9 +11,9 @@ import { Faq } from "@/components/marketing/faq";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Upstream — Know before it breaks",
+  title: "ApiRift — Know before it breaks",
   description:
-    "Your product is built on APIs that change without asking. Upstream reads every changelog, status page, and deprecation notice in your stack — and tells you what will break you, before it does.",
+    "Your product is built on APIs that change without asking. ApiRift reads every changelog, status page, and deprecation notice in your stack — and tells you what will break you, before it does.",
   alternates: { canonical: "/" },
 };
 
@@ -44,19 +44,19 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      name: "Upstream",
-      url: process.env.NEXT_PUBLIC_APP_URL ?? "https://upstream.watch",
+      name: "ApiRift",
+      url: process.env.NEXT_PUBLIC_APP_URL ?? "https://apirift.com",
     },
     {
       "@type": "Organization",
-      name: "Upstream",
-      url: process.env.NEXT_PUBLIC_APP_URL ?? "https://upstream.watch",
+      name: "ApiRift",
+      url: process.env.NEXT_PUBLIC_APP_URL ?? "https://apirift.com",
       description:
         "Autonomous monitoring for every API your product depends on.",
     },
     {
       "@type": "SoftwareApplication",
-      name: "Upstream",
+      name: "ApiRift",
       applicationCategory: "DeveloperApplication",
       operatingSystem: "Web",
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -92,7 +92,7 @@ export default async function LandingPage() {
             </h1>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-fg-muted">
               Your product is built on APIs that change without asking.
-              Upstream reads every changelog, status page, and deprecation
+              ApiRift reads every changelog, status page, and deprecation
               notice in your stack — and tells you what will break you, before
               it does.
             </p>
@@ -213,7 +213,7 @@ export default async function LandingPage() {
                 enough to read everything, it couldn't be software either.
               </p>
               <p>
-                Upstream's registry is shared infrastructure: Stripe gets
+                ApiRift's registry is shared infrastructure: Stripe gets
                 watched once, for everyone. Every provider added, every change
                 classified, every breakage confirmed makes the system smarter
                 for every user at once. A competitor starting today starts
@@ -296,3 +296,4 @@ export default async function LandingPage() {
     </>
   );
 }
+             

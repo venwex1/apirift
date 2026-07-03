@@ -14,7 +14,7 @@ The failure mode is always the same and it's always dumb: provider announces a b
 
 The economics of why nobody solves this manually: reading ~40 changelog feeds weekly, deciding what applies to your specific integrations, is real work with almost-always-zero payoff — until the one entry that saves your quarter. Enterprises staff platform teams for exactly this. Solo founders and small teams can't.
 
-What changed recently is that LLM classification became cheap enough that "read everything, decide what matters" is now viable as software. So I built it: **Upstream** (https://upstream-pi.vercel.app).
+What changed recently is that LLM classification became cheap enough that "read everything, decide what matters" is now viable as software. So I built it: **ApiRift** (https://upstream-pi.vercel.app).
 
 Mechanics, since this crowd will ask:
 

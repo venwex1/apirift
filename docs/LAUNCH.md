@@ -1,4 +1,4 @@
-# Upstream — Launch runbook
+# ApiRift — Launch runbook
 
 ## WHAT YOU NEED TO DO (in order, ~2.5 hours total)
 
@@ -8,22 +8,22 @@
    `DIRECT_URL`. Verify "Point-in-time restore" shows enabled on the project
    (it is by default on all plans — this is the primary backup).
 3. **Stripe** (20 min) — dashboard.stripe.com → Product catalog → Add product:
-   - Product "Upstream Pro": price $12/month recurring → copy price ID →
+   - Product "ApiRift Pro": price $12/month recurring → copy price ID →
      `STRIPE_PRICE_PRO_MONTHLY`; add second price $115/year → `STRIPE_PRICE_PRO_YEARLY`.
-   - Product "Upstream Team": $29/month → `STRIPE_PRICE_TEAM_MONTHLY`;
+   - Product "ApiRift Team": $29/month → `STRIPE_PRICE_TEAM_MONTHLY`;
      $278/year → `STRIPE_PRICE_TEAM_YEARLY`.
    - Developers → API keys → secret key → `STRIPE_SECRET_KEY`.
    - Settings → Billing → Customer portal → enable it (allow cancel + payment
      method update).
    - Webhooks: added in step 12 (needs the domain first).
-4. **Clerk** (15 min) — clerk.com → Create application "Upstream" (email +
+4. **Clerk** (15 min) — clerk.com → Create application "ApiRift" (email +
    Google). Copy `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`.
    Configure → Paths: sign-in `/sign-in`, sign-up `/sign-up`, after-auth `/dashboard`.
 5. **Upstash** (5 min) — console.upstash.com → Create Redis database (regional,
    us-east-1) → copy REST URL + token → `UPSTASH_REDIS_REST_URL/_TOKEN`.
 6. **Resend** (15 min + DNS wait) — resend.com → Domains → Add your domain →
    create the 3 DNS records it shows → verify. API keys → create →
-   `RESEND_API_KEY`. Set `EMAIL_FROM="Upstream <signal@yourdomain>"` and
+   `RESEND_API_KEY`. Set `EMAIL_FROM="ApiRift <signal@yourdomain>"` and
    `FOUNDER_EMAIL` to your inbox.
 7. **Cloudflare R2** (10 min) — dash.cloudflare.com → R2 → Create bucket
    `upstream-backups`. Manage API tokens → create token (Object Read & Write,

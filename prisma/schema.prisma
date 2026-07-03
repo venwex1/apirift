@@ -73,7 +73,7 @@ model User {
   stripeSubscriptionId String?
   planRenewsAt         DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
-  attributionRemoved   Boolean   @default(false) // Pro perk: hide "Watched by Upstream" on shared reports
+  attributionRemoved   Boolean   @default(false) // Pro perk: hide "Watched by ApiRift" on shared reports
   referralCode         String    @unique
   referredById         String?
   referredBy           User?     @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)

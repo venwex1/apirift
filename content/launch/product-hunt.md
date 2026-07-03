@@ -1,13 +1,13 @@
 # Product Hunt launch
 
 **Title** (max 60 chars):
-Upstream — Know before it breaks
+ApiRift — Know before it breaks
 
 **Tagline** (max 60 chars):
 Autonomous monitoring for every API your product runs on
 
 **Description** (max 260 chars):
-Your product is built on APIs that change without asking. Upstream reads every changelog, status page, and deprecation notice in your stack, classifies what matters, and alerts you before it breaks you. Paste a package.json — watched in 60 seconds.
+Your product is built on APIs that change without asking. ApiRift reads every changelog, status page, and deprecation notice in your stack, classifies what matters, and alerts you before it breaks you. Paste a package.json — watched in 60 seconds.
 
 **First comment** (the founder's story):
 
@@ -21,7 +21,7 @@ That's when it clicked: I monitor my own code obsessively — Sentry, uptime che
 
 The reason this product didn't exist before is economic: reading 400 changelogs a week and deciding what matters *to your specific stack* was never worth a human salary. LLM classification made it cost fractions of a cent. So I built the thing I needed.
 
-How it works: paste your package.json (or pick providers from the registry). Upstream polls every changelog, status feed, and release channel every 30 minutes, classifies each entry by severity and affected surface, and turns deprecations-with-dates into countdowns against your stack. Breaking change in an API you use? Alert in your inbox within minutes, with the specific action to take. Feature announcements? One line in Monday's digest. Silence means genuinely nothing happened — that's the whole point.
+How it works: paste your package.json (or pick providers from the registry). ApiRift polls every changelog, status feed, and release channel every 30 minutes, classifies each entry by severity and affected surface, and turns deprecations-with-dates into countdowns against your stack. Breaking change in an API you use? Alert in your inbox within minutes, with the specific action to take. Feature announcements? One line in Monday's digest. Silence means genuinely nothing happened — that's the whole point.
 
 The hard engineering was making it fully autonomous: content-hash polling, structural idempotency (database constraints ARE the dedupe logic), a daily AI budget cap so a misbehaving feed can't cause a surprise invoice, and sources that self-disable and report when they rot. It runs without me. That was a design requirement — I built this because I don't have time to watch things.
 

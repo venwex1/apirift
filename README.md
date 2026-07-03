@@ -1,4 +1,4 @@
-# Upstream
+# ApiRift
 
 **Know before it breaks.** Autonomous monitoring for every API your product
 depends on — changelogs, deprecations, incidents — classified by severity

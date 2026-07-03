@@ -8,7 +8,7 @@
 
 Every product I've shipped has eventually been broken by code I didn't write and couldn't see coming: a payment provider changing webhook signatures, an AI vendor retiring a model, an SDK major that encoded an upstream API change. The information was always public — changelogs, status pages, deprecation notices — and I never read it, because nobody reads 25 vendor feeds a week.
 
-So I built Upstream (https://upstream.watch), a system that reads all of it autonomously and tells each user about the subset that affects *their* stack. This post covers the four engineering decisions I'd defend in a design review, with code.
+So I built ApiRift (https://apirift.com), a system that reads all of it autonomously and tells each user about the subset that affects *their* stack. This post covers the four engineering decisions I'd defend in a design review, with code.
 
 ## The shape of the problem
 
@@ -75,4 +75,4 @@ The compounding asset is the `Change` table: a structured, growing history of ho
 
 Next.js 15 App Router (TS strict, `noUncheckedIndexedAccess`), Prisma + Neon, Clerk, Stripe, Claude Haiku for classification, Upstash Redis, Resend + React Email, Vercel crons. No queue on day one — cron plus structural idempotency covers launch scale, and the fan-out seam is one file so a queue slots in when numbers demand it.
 
-If you build on third-party APIs (you do), the per-provider change histories are public at https://upstream.watch — and if a provider you depend on is missing from the registry, tell me and it ships to everyone.
+If you build on third-party APIs (you do), the per-provider change histories are public at https://apirift.com — and if a provider you depend on is missing from the registry, tell me and it ships to everyone.

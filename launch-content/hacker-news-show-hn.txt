@@ -1,14 +1,14 @@
-Title: Show HN: Upstream – alerts when APIs you depend on announce breaking changes
+Title: Show HN: ApiRift – alerts when APIs you depend on announce breaking changes
 
 Opening (79 words):
 
-My checkout died because a payment provider changed webhook signatures — announced publicly six weeks earlier in a changelog nobody read. Upstream reads them for you: it polls every changelog and status feed in your stack, classifies entries with an LLM (kind, severity, affected surface, deadline), and alerts you only when something will actually break you. Deprecations become countdowns. Paste a package.json to map your dependencies to providers. Free for 5 providers.
+My checkout died because a payment provider changed webhook signatures — announced publicly six weeks earlier in a changelog nobody read. ApiRift reads them for you: it polls every changelog and status feed in your stack, classifies entries with an LLM (kind, severity, affected surface, deadline), and alerts you only when something will actually break you. Deprecations become countdowns. Paste a package.json to map your dependencies to providers. Free for 5 providers.
 
 https://upstream-pi.vercel.app
 
 Follow-up detail for comments (why this beats subscribing to RSS feeds yourself):
 
-Raw feeds are the problem, not the solution — I tried an RSS folder of vendor changelogs first and stopped reading it within two weeks, because ~98% of entries are irrelevant announcements. The unread-count trains you to ignore the folder, which is worse than nothing: you *believe* you're covered. The hard part was never access to the information; it's classification against your integration surface. "New dashboard theme" and "signature scheme sunsets Aug 12" arrive in the same feed with the same formatting. Upstream's pipeline does the part a feed reader can't: severity + affected-surface + deadline extraction (strict JSON schema, entries that fail validation are shown unclassified rather than dropped), then routing — only CRITICAL/HIGH on providers you actually use interrupt you; the rest lands in a Monday digest where silence genuinely means nothing happened. Also: HTML changelogs without feeds, status pages, and dedup across sources — a registry watched once serves everyone, so requesting a missing provider takes me minutes and ships to all users.
+Raw feeds are the problem, not the solution — I tried an RSS folder of vendor changelogs first and stopped reading it within two weeks, because ~98% of entries are irrelevant announcements. The unread-count trains you to ignore the folder, which is worse than nothing: you *believe* you're covered. The hard part was never access to the information; it's classification against your integration surface. "New dashboard theme" and "signature scheme sunsets Aug 12" arrive in the same feed with the same formatting. ApiRift's pipeline does the part a feed reader can't: severity + affected-surface + deadline extraction (strict JSON schema, entries that fail validation are shown unclassified rather than dropped), then routing — only CRITICAL/HIGH on providers you actually use interrupt you; the rest lands in a Monday digest where silence genuinely means nothing happened. Also: HTML changelogs without feeds, status pages, and dedup across sources — a registry watched once serves everyone, so requesting a missing provider takes me minutes and ships to all users.
 
 Notes:
 - The LLM never fetches or parses pages (deterministic extraction only) — keeps cost ~zero for unchanged sources and contains prompt injection from third-party content.

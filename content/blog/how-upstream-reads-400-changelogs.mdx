@@ -1,10 +1,10 @@
 ---
-title: "How Upstream reads 400 changelogs so you don't"
+title: "How ApiRift reads 400 changelogs so you don't"
 description: "The engineering behind autonomous dependency intelligence: content-hash polling, deterministic extraction, LLM classification with strict schemas, and the failure modes we designed for first."
 date: "2026-07-02"
 ---
 
-Upstream's job sounds simple: read everything API providers publish, and tell each user about the subset that will break *their* product. The interesting engineering is in the word "autonomous" — the pipeline runs unattended, forever, against sources we don't control, feeding an alerting system where both false positives and false negatives have real costs. This post walks through how it works and why it's built the way it is.
+ApiRift's job sounds simple: read everything API providers publish, and tell each user about the subset that will break *their* product. The interesting engineering is in the word "autonomous" — the pipeline runs unattended, forever, against sources we don't control, feeding an alerting system where both false positives and false negatives have real costs. This post walks through how it works and why it's built the way it is.
 
 ## The pipeline in one paragraph
 

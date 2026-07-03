@@ -32,11 +32,11 @@ The obvious fix — aggregate all the feeds into one place — has been tried, a
 
 "Reads arbitrary prose and decides whether it matters to a specific audience" was, until recently, a description of a human job. It is now a description of a cheap language-model call. An entry like "We're updating the default behavior of the customers endpoint to..." can be read, classified — breaking or cosmetic? deadline or FYI? which API surface? — and routed in under a second, for a fraction of a cent.
 
-That single economic fact is the whole reason Upstream can exist. Reading every changelog on the internet was never worth a human. It is trivially worth a machine.
+That single economic fact is the whole reason ApiRift can exist. Reading every changelog on the internet was never worth a human. It is trivially worth a machine.
 
 ## What "watched" should mean
 
-We built Upstream around a specific standard: silence must be information. If you hear nothing, that must *mean* nothing happened — not that nothing was seen.
+We built ApiRift around a specific standard: silence must be information. If you hear nothing, that must *mean* nothing happened — not that nothing was seen.
 
 So the system reads everything: every changelog, status feed, and release channel for every provider in the registry, every thirty minutes, forever. Each entry is classified by kind and severity against the surface it touches. A breaking change in an API you use becomes an alert in your inbox within minutes, with the affected surface and the action to take. A feature announcement becomes one line in Monday's digest. A deprecation with a date becomes a countdown that ticks on your dashboard until you've dealt with it.
 

@@ -4,13 +4,13 @@ description: "Practical habits for building on APIs you don't control: how to re
 date: "2026-07-02"
 ---
 
-Your product is a thin layer of your code on top of a thick layer of other people's promises. Those promises change. This is a practical guide to living with that — useful whether or not you use Upstream, though we'll note where automation removes the discipline requirement entirely.
+Your product is a thin layer of your code on top of a thick layer of other people's promises. Those promises change. This is a practical guide to living with that — useful whether or not you use ApiRift, though we'll note where automation removes the discipline requirement entirely.
 
 ## Know your actual blast radius
 
 Most teams can't answer "which external APIs can take us down?" without opening the codebase. Fix that first. List every third-party service your product calls in production, and for each one write a single line: what breaks for users when this breaks. Payments API → checkout dies. Email API → receipts and resets stop. AI API → the core feature 500s or degrades.
 
-The exercise takes twenty minutes and permanently changes how you read vendor emails. (In Upstream, this is the Impact page: paste a package.json and the mapping is generated and kept current. But the paper version works.)
+The exercise takes twenty minutes and permanently changes how you read vendor emails. (In ApiRift, this is the Impact page: paste a package.json and the mapping is generated and kept current. But the paper version works.)
 
 ## Read deprecation notices like contracts, because they are
 
@@ -28,7 +28,7 @@ When you do bump a major, read the release notes *before* the diff. SDK majors u
 
 The most corrosive thing about dependency risk is ambient anxiety: *is something out there ticking?* You can't check twenty changelogs weekly — you won't, and intermittent discipline is worse than none because it builds false confidence.
 
-The fix is any system where **no signal reliably means no news**: a monitored aggregation with severity filtering, or a teammate who owns the rotation (and actually does it), or Upstream's model — everything read continuously, only material changes surfaced, a weekly "all quiet" that means exactly what it says. The mechanism matters less than the property. If silence is ambiguous, you have monitoring theater.
+The fix is any system where **no signal reliably means no news**: a monitored aggregation with severity filtering, or a teammate who owns the rotation (and actually does it), or ApiRift's model — everything read continuously, only material changes surfaced, a weekly "all quiet" that means exactly what it says. The mechanism matters less than the property. If silence is ambiguous, you have monitoring theater.
 
 ## Have a Tuesday-morning drill
 

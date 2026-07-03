@@ -10,7 +10,7 @@ The worst one was checkout. A payment provider changed its webhook signature sch
 
 That's the actual problem: a typical solo product depends on 10–25 external APIs. Each publishes changes in a different format at a different URL. Almost all of it is noise — but a few entries a year are "this breaks you on a specific date." Reading everything is a job nobody does; big companies literally pay platform teams for it. The rest of us run on production errors and luck.
 
-So I built Upstream (https://upstream-pi.vercel.app). What it does:
+So I built ApiRift (https://upstream-pi.vercel.app). What it does:
 
 - You paste your package.json (or pick providers from a registry). Takes about a minute.
 - It polls every changelog and status feed for those providers, round the clock, and uses an LLM to classify each entry: breaking / deprecation / incident / feature, severity, which API surface, and any stated deadline.

@@ -1,13 +1,13 @@
-# Upstream — System Architecture
+# ApiRift — System Architecture
 
-One sentence: Upstream watches every API your product depends on and tells you
+One sentence: ApiRift watches every API your product depends on and tells you
 what will break you, before it does.
 
 ## System diagram
 
 ```mermaid
 flowchart LR
-  subgraph External["Upstream sources (the world)"]
+  subgraph External["ApiRift sources (the world)"]
     CL[Provider changelogs<br/>RSS / JSON / HTML]
     ST[Status pages]
   end
