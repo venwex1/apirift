@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cron/poll-sources", "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/classify-changes", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/send-alerts", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/poll-sources", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/classify-changes", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/send-alerts", "schedule": "0 2 * * *" },
     { "path": "/api/cron/send-digests", "schedule": "0 9 * * 1" },
     { "path": "/api/cron/lifecycle-emails", "schedule": "0 14 * * *" },
     { "path": "/api/cron/backup-export", "schedule": "0 3 * * 0" }
