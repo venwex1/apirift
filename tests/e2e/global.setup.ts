@@ -22,11 +22,14 @@ setup("authenticate test user", async ({ page }) => {
 
   // clerkSetup() fetches a Testing Token which is only supported with
   // Clerk development-mode keys (sk_test_*). Live keys (sk_live_*) cause
-  // the request to hang indefinitely — skip before calling the API.
+  // the request to hang indefinitely — bail out immediately before calling.
   const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
   if (!clerkKey.startsWith("sk_test_")) {
-    console.warn("[setup] CLERK_SECRET_KEY is not a test key — skipping authenticated suite (testing tokens require sk_test_*)");
-    setup.skip(true, "Clerk Testing Token requires sk_test_* key — skipping authenticated suite");
+    console.warn("[setup] CLERK_SECRET_KEY is not a test key — authenticated suite skipped (needs sk_test_*)");
+    // test.skip() with no args is the only form guaranteed to halt execution
+    // immediately inside a test body in Playwright.
+    setup.skip();
+    return;
   }
 
   await clerkSetup();
