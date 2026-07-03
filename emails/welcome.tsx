@@ -7,29 +7,23 @@ export default function WelcomeEmail({ name }: { name: string | null }) {
       <Text style={styles.h1}>Your stack is now being watched</Text>
       <Text style={styles.text}>{greeting(name)}</Text>
       <Text style={styles.text}>
-        Upstream is simple: you tell it what your product is built on, and it
-        tells you when any of it is about to change underneath you.
+        Welcome to Upstream. Here's the whole product in three lines:
       </Text>
       <Text style={styles.text}>
-        The fastest setup is one paste. Open Impact, drop in your
-        package.json, and in ten seconds you'll see every breaking change,
-        deprecation, and incident across your actual dependencies from the
-        last 90 days — plus everything gets watched going forward.
+        • <strong>We read everything</strong> — changelogs, status pages, and
+        deprecation notices for every API provider you watch, around the clock.
+      </Text>
+      <Text style={styles.text}>
+        • <strong>You hear only what matters</strong> — breaking changes and
+        deadlines become alerts; everything else waits for Monday's digest.
+      </Text>
+      <Text style={styles.text}>
+        • <strong>Deadlines become countdowns</strong> — "sunsets March 1"
+        turns into "41 days, here's the affected surface, here's what to do."
+      </Text>
+      <Text style={styles.text}>
+        The fastest setup is one paste: drop your package.json into Impact and
+        in ten seconds you'll see every breaking change and deprecation across
+        your actual dependencies — and your stack is watched from then on.
       </Text>
       <Link href={appUrl("/impact")} style={styles.buttonGreen}>
-        Paste your package.json
-      </Link>
-      <Text style={styles.text}>
-        Prefer to pick by hand? The registry has every watched provider:{" "}
-        <Link href={appUrl("/providers")} style={{ color: "#1B8A67" }}>
-          browse the registry
-        </Link>
-        .
-      </Text>
-      <Text style={styles.mono}>
-        Setup time: ~60 seconds. Emails from us after this: only when your
-        stack changes, plus a Monday digest.
-      </Text>
-    </EmailShell>
-  );
-}
