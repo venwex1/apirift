@@ -1,0 +1,36 @@
+name: upstream-cron
+
+# Vercel Hobby limits crons to daily. This workflow restores the product's
+# actual promise — sources polled every 30 minutes, alerts out within the
+# hour — at zero cost. The Vercel daily crons remain as a backstop; every
+# job is idempotent, so double-firing is harmless.
+#
+# SETUP (one manual step): repo Settings → Secrets and variables → Actions →
+# New repository secret → name CRON_SECRET, value = the CRON_SECRET from
+# Vercel env vars. The schedule activates on the next push to main.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Poll sources
+        run: |
+          curl --fail-with-body --max-time 300 -s \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://upstream-pi.vercel.app/api/cron/poll-sources"
+      - name: Classify changes
+        run: |
+          curl --fail-with-body --max-time 300 -s \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://upstream-pi.vercel.app/api/cron/classify-changes"
+      - name: Send alerts
+        run: |
+          curl --fail-with-body --max-time 120 -s \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://upstream-pi.vercel.app/api/cron/send-alerts"
