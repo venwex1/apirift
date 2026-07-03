@@ -35,6 +35,12 @@ const serverSchema = z.object({
 });
 
 function loadEnv(): z.infer<typeof serverSchema> {
+  // Allow CI static-analysis steps (tsc, next lint) to skip validation so
+  // they don't need all 20+ secrets wired up as Actions secrets.
+  // Vercel production builds always run with SKIP_ENV_VALIDATION unset.
+  if (process.env.SKIP_ENV_VALIDATION === "true") {
+    return process.env as unknown as z.infer<typeof serverSchema>;
+  }
   const parsed = serverSchema.safeParse(process.env);
   if (!parsed.success) {
     const missing = parsed.error.issues

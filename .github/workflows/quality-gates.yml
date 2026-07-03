@@ -45,10 +45,14 @@ jobs:
       - name: Prisma generate
         run: npx prisma generate
       - name: TypeScript (tsc --noEmit)
+        env:
+          SKIP_ENV_VALIDATION: "true"
         run: |
           set -o pipefail
           npx tsc --noEmit 2>&1 | tee tsc-output.txt
       - name: Lint (next lint)
+        env:
+          SKIP_ENV_VALIDATION: "true"
         run: |
           set -o pipefail
           npx next lint 2>&1 | tee lint-output.txt
@@ -216,4 +220,4 @@ jobs:
         run: |
           node scripts/ci/send-alert.mjs \
             --subject="Production check failed after deploy ${GITHUB_SHA::7} — rollback attempted" \
-            --body="Post-deploy verification of $PRODUCTION_URL failed for commit $GITHUB_SHA.\n\nAutomatic rollback to the previous production deployment was attempted (target: ${{ steps.previous.outputs.url }}).\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nVerify: $PRODUCT
+            --body="Post-deploy verification of $PRODUCTION_URL failed for commit $GITHUB_SHA.\n\nAutomatic rollback to the previous production deployment was attempted (target: ${{ steps.previous.outputs.url }}).\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nVerify: $PRODUCTION_URL/api/health"
