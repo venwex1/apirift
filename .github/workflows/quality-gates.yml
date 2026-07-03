@@ -1,0 +1,219 @@
+name: quality-gates
+
+# Checkpoint-based pipeline. Each checkpoint must pass before the next runs
+# (enforced with `needs:`); a failure halts progression, reports details on
+# the PR, and — for production — triggers rollback + founder alert.
+#
+#   CP1 static analysis   → every push + PR
+#   CP2 E2E (Playwright)  → after CP1, against the Vercel deployment of the commit
+#   CP3 preview smoke     → after CP2, PRs only (gates promotion)
+#   CP4 production check  → after CP2, main only (rollback + email on failure)
+#
+# CP5 (6-hourly monitor) lives in production-monitor.yml.
+# The existing apirift-cron workflow (upstream-cron.yml) is untouched.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: quality-gates-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERCEL_TEAM: umutalp8898-4118s-projects
+  PRODUCTION_URL: https://apirift.com
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  checkpoint-1-static:
+    name: "CP1 · static analysis"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Prisma generate
+        run: npx prisma generate
+      - name: TypeScript (tsc --noEmit)
+        run: |
+          set -o pipefail
+          npx tsc --noEmit 2>&1 | tee tsc-output.txt
+      - name: Lint (next lint)
+        run: |
+          set -o pipefail
+          npx next lint 2>&1 | tee lint-output.txt
+      - name: Report failure on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const read = (f) => { try { return fs.readFileSync(f, 'utf8').slice(-4000); } catch { return '(no output captured)'; } };
+            const body = [
+              '## ❌ Checkpoint 1 failed — static analysis',
+              'Pipeline halted. Fix the errors below; CP2–CP4 did not run.',
+              '',
+              '<details><summary>tsc --noEmit</summary>',
+              '', '```', read('tsc-output.txt'), '```', '</details>',
+              '<details><summary>next lint</summary>',
+              '', '```', read('lint-output.txt'), '```', '</details>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              ...context.repo, issue_number: context.issue.number, body,
+            });
+
+  checkpoint-2-e2e:
+    name: "CP2 · E2E suite"
+    needs: checkpoint-1-static
+    runs-on: ubuntu-latest
+    outputs:
+      target_url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Wait for Vercel deployment of this commit
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          SHA="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          TARGET="${{ github.event_name == 'pull_request' && 'preview' || 'production' }}"
+          node scripts/ci/wait-for-vercel.mjs --target="$TARGET" --sha="$SHA"
+      - name: Run Playwright suite against deployment
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.deploy.outputs.url }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: npx playwright test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 14
+      - name: Report failure on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              '## ❌ Checkpoint 2 failed — E2E test suite',
+              `Target: ${{ toJSON(steps.deploy.outputs.url) }}`,
+              '',
+              'Merge is blocked. The full Playwright report (screenshots + traces',
+              `for every failure) is attached as an artifact on [this run](${url}).`,
+              '',
+              'CP3 (preview smoke) did not run.',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              ...context.repo, issue_number: context.issue.number, body,
+            });
+
+  checkpoint-3-preview-smoke:
+    name: "CP3 · preview smoke"
+    needs: checkpoint-2-e2e
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Smoke test preview deployment
+        run: node scripts/ci/smoke.mjs --base="${{ needs.checkpoint-2-e2e.outputs.target_url }}" --mode=preview
+      - name: Report failure on PR
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              '## ❌ Checkpoint 3 failed — preview smoke test',
+              `Preview: ${{ toJSON(needs.checkpoint-2-e2e.outputs.target_url) }}`,
+              '',
+              'Do **not** promote this to production. See the job summary for',
+              'the exact endpoint(s) that failed.',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              ...context.repo, issue_number: context.issue.number, body,
+            });
+
+  checkpoint-4-production:
+    name: "CP4 · production health + auto-rollback"
+    needs: checkpoint-2-e2e
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Production health + smoke (apirift.com)
+        run: node scripts/ci/smoke.mjs --base="$PRODUCTION_URL" --mode=production
+      - name: Resolve previous good deployment
+        id: previous
+        if: failure()
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          node --input-type=module - <<'EOF' >> "$GITHUB_OUTPUT"
+          const token = process.env.VERCEL_TOKEN;
+          const projectId = process.env.VERCEL_PROJECT_ID;
+          const team = process.env.VERCEL_TEAM ?? "umutalp8898-4118s-projects";
+          const url = new URL("https://api.vercel.com/v6/deployments");
+          url.searchParams.set("projectId", projectId);
+          url.searchParams.set("target", "production");
+          url.searchParams.set("state", "READY");
+          url.searchParams.set("limit", "5");
+          url.searchParams.set("slug", team);
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+          const body = await res.json();
+          const deployments = body.deployments ?? [];
+          // [0] is the current (bad) production deployment; [1] is the rollback target.
+          const previous = deployments[1];
+          if (!previous) { console.error("No previous READY production deployment found."); process.exit(1); }
+          console.log(`uid=${previous.uid}`);
+          console.log(`url=https://${previous.url}`);
+          EOF
+      - name: Roll back production
+        if: failure() && steps.previous.outputs.uid != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npx vercel@latest rollback "${{ steps.previous.outputs.uid }}" \
+            --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_TEAM" \
+          || npx vercel@latest promote "${{ steps.previous.outputs.url }}" \
+            --yes --token="$VERCEL_TOKEN" --scope="$VERCEL_TEAM"
+      - name: Alert founder
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          FOUNDER_EMAIL: ${{ secrets.FOUNDER_EMAIL }}
+        run: |
+          node scripts/ci/send-alert.mjs \
+            --subject="Production check failed after deploy ${GITHUB_SHA::7} — rollback attempted" \
+            --body="Post-deploy verification of $PRODUCTION_URL failed for commit $GITHUB_SHA.\n\nAutomatic rollback to the previous production deployment was attempted (target: ${{ steps.previous.outputs.url }}).\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nVerify: $PRODUCT

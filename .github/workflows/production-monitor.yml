@@ -1,0 +1,40 @@
+name: production-monitor
+
+# Checkpoint 5 — continuous monitoring. Smoke-tests production every 6 hours;
+# any failure emails the founder via the app's own Resend setup. Complements
+# (not replaces) the 60-second Better Stack monitor on /api/health: this one
+# also verifies real pages render with the right content.
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  PRODUCTION_URL: https://apirift.com
+
+jobs:
+  monitor:
+    name: "CP5 · production smoke"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Smoke test production
+        id: smoke
+        run: node scripts/ci/smoke.mjs --base="$PRODUCTION_URL" --mode=production
+      - name: Alert founder
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          FOUNDER_EMAIL: ${{ secrets.FOUNDER_EMAIL }}
+        run: |
+          node scripts/ci/send-alert.mjs \
+            --subject="Production monitor failed ($(date -u +%H:%M) UTC)" \
+            --body="The 6-hourly production smoke test failed for $PRODUCTION_URL.\n\nSee the job summary for exactly which check failed:\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nQuick manual check: $PRODUCTION_URL/api/health"

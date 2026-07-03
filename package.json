@@ -12,7 +12,9 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "email:dev": "email dev --dir emails"
+    "email:dev": "email dev --dir emails",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -46,18 +48,20 @@
     "zod": "3.24.2"
   },
   "devDependencies": {
+    "@clerk/testing": "^1.4.0",
+    "@playwright/test": "^1.50.1",
     "@types/node": "22.13.4",
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "autoprefixer": "10.4.20",
+    "eslint": "9.20.1",
+    "eslint-config-next": "15.3.9",
     "postcss": "8.5.2",
     "prisma": "6.4.1",
     "react-email": "3.0.6",
     "tailwindcss": "3.4.17",
     "tsx": "4.19.2",
-    "typescript": "5.7.3",
-    "eslint": "9.20.1",
-    "eslint-config-next": "15.3.9"
+    "typescript": "5.7.3"
   },
   "engines": {
     "node": ">=20.0.0"

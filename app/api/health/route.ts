@@ -33,41 +33,74 @@ async function check(fn: () => Promise<void>): Promise<CheckResult> {
 }
 
 /**
- * Health endpoint polled by Better Stack every 60s.
- * healthy   → all checks pass
- * degraded  → AI or storage down (product functions, classification queues)
- * unhealthy → database, Redis, or Stripe down (core function impaired)
+ * Health endpoint. Consumed by Better Stack (60s), the CI quality gates
+ * (checkpoints 3–5), and humans.
+ *
+ * Contract (stable — CI scripts assert on these fields):
+ *   status    "ok" | "degraded" | "down" — computed from db + redis + resend:
+ *             all pass → ok, some pass → degraded, none pass → down
+ *   db        boolean
+ *   redis     boolean
+ *   resend    boolean
+ *   timestamp ISO 8601
+ *   checks    per-service detail incl. stripe/ai/storage (informational)
+ *
+ * HTTP status: 503 when status is "down" OR the database is unreachable
+ * (db is existential — uptime alerting must fire even if redis/resend
+ * happen to be fine); 200 otherwise.
  */
 export async function GET(): Promise<Response> {
-  const [database, redisCheck, stripeCheck, ai, storage] = await Promise.all([
-    check(async () => {
-      await db.$queryRaw`SELECT 1`;
-    }),
-    check(async () => {
-      await redis.ping();
-    }),
-    check(async () => {
-      await stripe.prices.list({ limit: 1 });
-    }),
-    check(async () => {
-      const res = await fetch("https://api.anthropic.com/v1/models", {
-        headers: {
-          "x-api-key": env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-        },
-      });
-      if (!res.ok && res.status !== 429) throw new Error(`HTTP ${res.status}`);
-    }),
-    check(() => storageHealthCheck()),
-  ]);
+  const [database, redisCheck, resendCheck, stripeCheck, ai, storage] =
+    await Promise.all([
+      check(async () => {
+        await db.$queryRaw`SELECT 1`;
+      }),
+      check(async () => {
+        await redis.ping();
+      }),
+      check(async () => {
+        const res = await fetch("https://api.resend.com/domains", {
+          headers: { Authorization: `Bearer ${env.RESEND_API_KEY}` },
+        });
+        // 2xx = reachable + authed. 429 = reachable, rate limited — still up.
+        if (!res.ok && res.status !== 429) throw new Error(`HTTP ${res.status}`);
+      }),
+      check(async () => {
+        await stripe.prices.list({ limit: 1 });
+      }),
+      check(async () => {
+        const res = await fetch("https://api.anthropic.com/v1/models", {
+          headers: {
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+        });
+        if (!res.ok && res.status !== 429) throw new Error(`HTTP ${res.status}`);
+      }),
+      check(() => storageHealthCheck()),
+    ]);
 
-  const checks = { database, redis: redisCheck, stripe: stripeCheck, ai, storage };
-  const coreOk = database.ok && redisCheck.ok && stripeCheck.ok;
-  const allOk = coreOk && ai.ok && storage.ok;
-  const status = allOk ? "healthy" : coreOk ? "degraded" : "unhealthy";
+  const core = [database.ok, redisCheck.ok, resendCheck.ok];
+  const passing = core.filter(Boolean).length;
+  const status: "ok" | "degraded" | "down" =
+    passing === core.length ? "ok" : passing > 0 ? "degraded" : "down";
 
   return NextResponse.json(
-    { status, checks, timestamp: new Date().toISOString() },
-    { status: status === "unhealthy" ? 503 : 200 }
+    {
+      status,
+      db: database.ok,
+      redis: redisCheck.ok,
+      resend: resendCheck.ok,
+      timestamp: new Date().toISOString(),
+      checks: {
+        database,
+        redis: redisCheck,
+        resend: resendCheck,
+        stripe: stripeCheck,
+        ai,
+        storage,
+      },
+    },
+    { status: status === "down" || !database.ok ? 503 : 200 }
   );
 }
