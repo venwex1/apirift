@@ -4,7 +4,7 @@ import { AppError, ErrorCode, withRetry } from "@/lib/errors";
 import type { BillingInterval, PaidPlan } from "@/lib/plans";
 
 export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-01-27.acacia",
+  apiVersion: "2025-02-24.acacia",
   typescript: true,
 });
 
@@ -128,4 +128,4 @@ export async function grantReferralCredit(customerId: string): Promise<void> {
       }),
     { attempts: 3, baseDelayMs: 1000, timeoutMs: 15_000, label: "stripe.credit" }
   );
-}
+      }
