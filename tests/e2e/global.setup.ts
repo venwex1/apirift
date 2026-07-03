@@ -20,14 +20,25 @@ setup("authenticate test user", async ({ page }) => {
     "TEST_USER_EMAIL / TEST_USER_PASSWORD not set — skipping authenticated suite"
   );
 
-  await clerkSetup();
+  // clerkSetup() fetches a Testing Token which is only supported with
+  // Clerk development-mode keys (sk_test_*). With live keys it times out.
+  // We catch the failure so the public test suite still runs in CI.
+  try {
+    await clerkSetup();
+  } catch (err) {
+    console.warn(
+      "[setup] clerkSetup() failed — authenticated tests will be skipped.",
+      err instanceof Error ? err.message : err
+    );
+    setup.skip(true, "Clerk Testing Token unavailable (likely live-mode key) — skipping authenticated suite");
+  }
 
   await page.goto("/");
   await clerk.signIn({
     page,
     signInParams: {
       strategy: "password",
-      identifier: email as string, // narrowed by setup.skip above
+      identifier: email as string,
       password: password as string,
     },
   });
