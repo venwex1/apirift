@@ -33,13 +33,13 @@ if (!base.startsWith("http")) {
 const failures = [];
 const passes = [];
 
-async function fetchWithTimeout(url, ms = 20_000) {
+async function fetchWithTimeout(url, { redirect = "follow", ms = 20_000 } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
     return await fetch(url, {
       signal: controller.signal,
-      redirect: "follow",
+      redirect,
       headers: { "user-agent": "apirift-quality-gate/1.0" },
     });
   } finally {
@@ -69,6 +69,29 @@ async function checkPage(path, { titleMustContain } = {}) {
   }
 }
 
+/**
+ * Auth-gated routes redirect to sign-in rather than returning 200 directly.
+ * We use redirect:"manual" so fetch returns the 3xx itself rather than
+ * following the chain into Clerk's external sign-in domain (which may 404).
+ * Accept 2xx (if somehow unauthenticated access is allowed) or any 3xx.
+ */
+async function checkAuthGatedPage(path) {
+  const url = `${base}${path}`;
+  try {
+    const res = await fetchWithTimeout(url, { redirect: "manual" });
+    if (res.status >= 200 && res.status < 400) {
+      const location = res.headers.get("location") ?? "";
+      passes.push(
+        `${path}: ${res.status}${location ? ` → ${location.replace(/\?.*/, "")}` : " OK"}`
+      );
+      return;
+    }
+    failures.push(`${path}: HTTP ${res.status} (expected 200 or 3xx auth redirect)`);
+  } catch (err) {
+    failures.push(`${path}: ${err.name === "AbortError" ? "timeout" : err.message}`);
+  }
+}
+
 async function checkHealth() {
   const path = "/api/health";
   try {
@@ -92,7 +115,7 @@ async function checkHealth() {
 
 await checkPage("/", { titleMustContain: "ApiRift" });
 await checkPage("/pricing");
-await checkPage("/providers");
+await checkAuthGatedPage("/providers"); // auth-gated: expect 3xx redirect to sign-in
 await checkHealth();
 
 const summary = [
