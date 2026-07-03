@@ -21,17 +21,15 @@ setup("authenticate test user", async ({ page }) => {
   );
 
   // clerkSetup() fetches a Testing Token which is only supported with
-  // Clerk development-mode keys (sk_test_*). With live keys it times out.
-  // We catch the failure so the public test suite still runs in CI.
-  try {
-    await clerkSetup();
-  } catch (err) {
-    console.warn(
-      "[setup] clerkSetup() failed — authenticated tests will be skipped.",
-      err instanceof Error ? err.message : err
-    );
-    setup.skip(true, "Clerk Testing Token unavailable (likely live-mode key) — skipping authenticated suite");
+  // Clerk development-mode keys (sk_test_*). Live keys (sk_live_*) cause
+  // the request to hang indefinitely — skip before calling the API.
+  const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
+  if (!clerkKey.startsWith("sk_test_")) {
+    console.warn("[setup] CLERK_SECRET_KEY is not a test key — skipping authenticated suite (testing tokens require sk_test_*)");
+    setup.skip(true, "Clerk Testing Token requires sk_test_* key — skipping authenticated suite");
   }
+
+  await clerkSetup();
 
   await page.goto("/");
   await clerk.signIn({
