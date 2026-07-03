@@ -7,40 +7,24 @@ const STORAGE_STATE = "playwright/.clerk/user.json";
 
 /**
  * One-time authenticated session bootstrap.
- * clerkSetup() obtains a Testing Token (requires CLERK_SECRET_KEY +
- * NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in env) so Clerk's bot detection doesn't
- * block the scripted sign-in; clerk.signIn() then authenticates the dedicated
- * test user and we persist the session for the `authenticated` project.
+ *
+ * This file only runs when the "setup" project is included by playwright.config.ts,
+ * which happens only when hasAuthCreds is true (sk_test_* key + test credentials).
+ * No defensive skip logic needed here — the config gates entry.
  */
 setup("authenticate test user", async ({ page }) => {
-  const email = process.env.TEST_USER_EMAIL;
-  const password = process.env.TEST_USER_PASSWORD;
-  setup.skip(
-    email === undefined || email === "" || password === undefined || password === "",
-    "TEST_USER_EMAIL / TEST_USER_PASSWORD not set — skipping authenticated suite"
-  );
-
-  // clerkSetup() fetches a Testing Token which is only supported with
-  // Clerk development-mode keys (sk_test_*). Live keys (sk_live_*) cause
-  // the request to hang indefinitely — bail out immediately before calling.
-  const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
-  if (!clerkKey.startsWith("sk_test_")) {
-    console.warn("[setup] CLERK_SECRET_KEY is not a test key — authenticated suite skipped (needs sk_test_*)");
-    // test.skip() with no args is the only form guaranteed to halt execution
-    // immediately inside a test body in Playwright.
-    setup.skip();
-    return;
-  }
-
   await clerkSetup();
+
+  const email = process.env.TEST_USER_EMAIL!;
+  const password = process.env.TEST_USER_PASSWORD!;
 
   await page.goto("/");
   await clerk.signIn({
     page,
     signInParams: {
       strategy: "password",
-      identifier: email as string,
-      password: password as string,
+      identifier: email,
+      password: password,
     },
   });
 

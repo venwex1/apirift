@@ -16,11 +16,14 @@ import { defineConfig, devices } from "@playwright/test";
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const isExternalTarget = process.env.PLAYWRIGHT_BASE_URL !== undefined;
 
-// Authenticated tests need a Clerk test account; skip them cleanly when the
-// credentials aren't configured instead of failing with a cryptic error.
+// Authenticated tests need Clerk dev-mode keys (sk_test_*) + test credentials.
+// When either is missing we exclude the setup project entirely — calling
+// clerkSetup() with a live key hangs indefinitely; excluding the project is
+// safer than trying to skip from inside the test body.
 const hasAuthCreds =
   (process.env.TEST_USER_EMAIL ?? "") !== "" &&
-  (process.env.TEST_USER_PASSWORD ?? "") !== "";
+  (process.env.TEST_USER_PASSWORD ?? "") !== "" &&
+  (process.env.CLERK_SECRET_KEY ?? "").startsWith("sk_test_");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -40,11 +43,18 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    {
-      name: "setup",
-      testMatch: /global\.setup\.ts/,
-      use: { ...devices["Desktop Chrome"] },
-    },
+    // Setup project only runs when hasAuthCreds is true (sk_test_* key +
+    // test credentials). Without it, clerkSetup() hangs on live keys and
+    // there is no auth state to save anyway.
+    ...(hasAuthCreds
+      ? [
+          {
+            name: "setup",
+            testMatch: /global\.setup\.ts/,
+            use: { ...devices["Desktop Chrome"] },
+          },
+        ]
+      : []),
     {
       name: "unauthenticated",
       testMatch: /public\.spec\.ts/,
