@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { Toaster } from "sonner";
 import { PostHogProvider } from "@/components/posthog-provider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -64,6 +65,7 @@ export default function RootLayout({
         <body className="font-display">
           <PostHogProvider>{children}</PostHogProvider>
           <Toaster theme="dark" position="bottom-right" />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
