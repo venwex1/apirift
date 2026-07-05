@@ -1,0 +1,93 @@
+name: db-admin
+
+# Manual dispatch only - never runs automatically.
+# Use this instead of running db:migrate / db:seed locally when the
+# sandbox environment cannot download the Prisma binary engine.
+#
+# Operations:
+#   migrate          - prisma migrate deploy (safe; only applies pending migrations)
+#   seed             - tsx prisma/seed.ts    (idempotent; upserts providers)
+#   migrate-and-seed - migrate then seed in sequence
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "DB operation"
+        required: true
+        type: choice
+        options:
+          - migrate
+          - seed
+          - migrate-and-seed
+      confirm:
+        description: "Type CONFIRM to proceed (safety gate)"
+        required: true
+        type: string
+
+concurrency:
+  group: db-admin-production
+  cancel-in-progress: false
+
+jobs:
+  db-operation:
+    name: "DB - ${{ github.event.inputs.operation }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Safety gate
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "CONFIRM" ]; then
+            echo "::error::You must type CONFIRM in the confirmation field to proceed."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: npx prisma generate
+
+      - name: migrate - prisma migrate deploy
+        if: ${{ contains(github.event.inputs.operation, 'migrate') }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          echo "Running prisma migrate deploy..."
+          npx prisma migrate deploy
+          echo "Migration complete."
+
+      - name: seed - tsx prisma/seed.ts
+        if: ${{ contains(github.event.inputs.operation, 'seed') }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          SKIP_ENV_VALIDATION: "true"
+        run: |
+          echo "Running seed..."
+          npx tsx prisma/seed.ts
+          echo "Seed complete."
+
+      - name: Notify founder on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          FOUNDER_EMAIL: ${{ secrets.FOUNDER_EMAIL }}
+        run: |
+          node scripts/ci/send-alert.mjs \
+            --subject="db-admin '${{ github.event.inputs.operation }}' FAILED (by ${{ github.actor }})" \
+            --body="db-admin workflow failed.\n\nOp: ${{ github.event.inputs.operation }}\nBy: ${{ github.actor }}\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
